@@ -5,11 +5,11 @@ const client = new Client({
   port: 6543,
   database: 'postgres',
   user: 'postgres.cryvkjhhbrsdmffgqmbj',
-  password: 'tu_contraseña_aquí',
-  ssl: { rejectUnauthorized: false } 
+  password: 'futtracking2024'
 });
 
 client.connect()
   .then(() => console.log('Conectado a la base de datos en el puerto 6543'))
-  .catch(err => console.error('Error conectando a la base de datos:', err.stack))
-  .finally(() => client.end());
+  .catch(err => console.error('Error conectando a la base de datos:', err.stack));
+
+module.exports = client;

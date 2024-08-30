@@ -1,35 +1,23 @@
-const supabase = require('../config/supabase');
+const db = require('../config/db');
 
 exports.test = async (req, res) => {
     return res.status(200).json({ message: 'okeyy' });
 };
 
 exports.getUserData = async (req, res) => {
-    const userId = 11; // Reemplaza con el ID correcto del usuario
+    const userId = 11;
 
     try {
-        const { data, error } = await supabase
-            .from('perfil_jugadores')
-            .select(`
-                id,
-                edad,
-                altura,
-                nacion_id,
-                provincia_id,
-                usuarios (
-                    id,
-                    email
-                )
-            `)
-            .eq('usuario_id', userId)
-            .single();
+        const userQuery = `
+            SELECT pj.id, pj.edad, pj.altura, pj.nacion_id, pj.provincia_id,
+                   u.id AS usuario_id, u.email
+            FROM perfil_jugadores pj
+            JOIN usuarios u ON pj.usuario_id = u.id
+            WHERE pj.usuario_id = $1
+        `;
+        const result = await db.query(userQuery, [userId]);
 
-        if (error) {
-            return res.status(500).json({ error: error.message });
-        }
-
-        console.log('getUserData data:', data);
-        res.json(data);
+        res.json(result.rows[0]);
     } catch (error) {
         console.error('Error en getUserData:', error.message);
         res.status(500).json({ error: error.message });
@@ -37,48 +25,33 @@ exports.getUserData = async (req, res) => {
 };
 
 exports.updateUserData = async (req, res) => {
-    const userId = 11; // Reemplaza con el ID correcto del usuario
+    const userId = 11;
     const { edad, altura, nacion_id, provincia_id, email } = req.body;
 
     try {
-        const { error: perfilError } = await supabase
-            .from('perfil_jugadores')
-            .update({ edad, altura, nacion_id, provincia_id })
-            .eq('usuario_id', userId);
+        const updateProfileQuery = `
+            UPDATE perfil_jugadores 
+            SET edad = $1, altura = $2, nacion_id = $3, provincia_id = $4
+            WHERE usuario_id = $5
+        `;
+        await db.query(updateProfileQuery, [edad, altura, nacion_id, provincia_id, userId]);
 
-        if (perfilError) {
-            console.log('Error al actualizar los datos del perfil:', perfilError);
-        }
-
-        const { error: usuarioError } = await supabase
-            .from('usuarios')
-            .update({ email })
-            .eq('id', userId);
-
-        if (usuarioError) {
-            console.log('Error al actualizar los datos del usuario:', usuarioError);
-        };
+        const updateUserQuery = 'UPDATE usuarios SET email = $1 WHERE id = $2';
+        await db.query(updateUserQuery, [email, userId]);
 
         res.status(200).json({ message: 'User data updated successfully' });
     } catch (error) {
+        console.log('Error al actualizar los datos del usuario:', error.message);
         res.status(500).json({ error: error.message });
     }
 };
 
 exports.getNaciones = async (req, res) => {
     try {
-        const { data, error } = await supabase
-            .from('naciones')
-            .select('*')
-            .order('nombre');
+        const nationsQuery = 'SELECT * FROM naciones ORDER BY nombre';
+        const result = await db.query(nationsQuery);
 
-        if (error) {
-            console.error('Error al obtener las naciones:', error);
-        };
-
-        console.log('getNaciones data:', data);
-
-        res.json(data);
+        res.json(result.rows);
     } catch (error) {
         console.error('Error en getNaciones:', error.message);
         res.status(500).json({ error: error.message });
@@ -88,19 +61,10 @@ exports.getNaciones = async (req, res) => {
 exports.getProvincias = async (req, res) => {
     const { nacionId } = req.params;
     try {
-        const { data, error } = await supabase
-            .from('provincias')
-            .select('*')
-            .eq('nacion_id', nacionId)
-            .order('nombre');
+        const provincesQuery = 'SELECT * FROM provincias WHERE nacion_id = $1 ORDER BY nombre';
+        const result = await db.query(provincesQuery, [nacionId]);
 
-        if (error) {
-            console.error('Error al obtener las provincias:', error);
-        };
-
-        console.log('getProvincias data:', data);
-
-        res.json(data);
+        res.json(result.rows);
     } catch (error) {
         console.error('Error en getProvincias:', error.message);
         res.status(500).json({ error: error.message });

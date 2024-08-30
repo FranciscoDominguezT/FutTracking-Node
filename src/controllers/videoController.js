@@ -1,135 +1,66 @@
-const supabase = require('../config/supabase');
+const db = require('../config/db');
 
 exports.getVideoData = async (req, res) => {
-  const { videoId } = req.params;
-  const userId = 11; // Asegúrate de obtener el userId correcto
+    const { videoId } = req.params;
+    const userId = 11;
 
-  try {
-    const { data, error } = await supabase
-      .from('videos')
-      .select('*')
-      .eq('id', videoId)
-      .single();
+    try {
+        const videoQuery = 'SELECT * FROM videos WHERE id = $1';
+        const videoResult = await db.query(videoQuery, [videoId]);
+        const videoData = videoResult.rows[0];
 
-    if (error) throw error;
+        const likeQuery = 'SELECT * FROM video_likes WHERE video_id = $1 AND user_id = $2';
+        const likeResult = await db.query(likeQuery, [videoId, userId]);
+        const liked = likeResult.rowCount > 0;
 
-    // Verificar si el usuario ha dado like
-    const { data: likeData, error: likeError } = await supabase
-      .from('video_likes')
-      .select('*')
-      .eq('video_id', videoId)
-      .eq('user_id', userId);
-
-    if (likeError) throw likeError;
-
-    const videoData = {
-      ...data,
-      liked: likeData.length > 0
-    };
-
-    res.json(videoData);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+        res.json({ ...videoData, liked });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };
 
 exports.getVideoLikes = async (req, res) => {
-  const { videoId } = req.params;
-  try {
-    const { data, error } = await supabase
-      .from('videos')
-      .select('likes')
-      .eq('id', videoId)
-      .single();
+    const { videoId } = req.params;
+    try {
+        const likesQuery = 'SELECT likes FROM videos WHERE id = $1';
+        const result = await db.query(likesQuery, [videoId]);
 
-    if (error) throw error;
-    res.json({ likes: data.likes });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+        res.json({ likes: result.rows[0].likes });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };
 
 exports.likeVideo = async (req, res) => {
-  const { videoId } = req.params;
-  const userId = 11; // Asegúrate de manejar correctamente el userId
+    const { videoId } = req.params;
+    const userId = 11;
 
-  try {
-    // Verificar si el usuario ya ha dado like
-    const { data: existingLikes, error: checkError } = await supabase
-      .from('video_likes')
-      .select('*')
-      .eq('video_id', videoId)
-      .eq('user_id', userId);
+    try {
+        const likeCheckQuery = 'SELECT * FROM video_likes WHERE video_id = $1 AND user_id = $2';
+        const likeCheckResult = await db.query(likeCheckQuery, [videoId, userId]);
 
-    if (checkError) {
-      console.log('Error al verificar like:', checkError);
-      return res.status(500).json({ error: checkError.message });
+        let updatedLikes;
+        if (likeCheckResult.rowCount > 0) {
+            await db.query('DELETE FROM video_likes WHERE video_id = $1 AND user_id = $2', [videoId, userId]);
+
+            const likeCountQuery = 'SELECT likes FROM videos WHERE id = $1';
+            const likeCountResult = await db.query(likeCountQuery, [videoId]);
+            updatedLikes = likeCountResult.rows[0].likes - 1;
+
+            await db.query('UPDATE videos SET likes = $1 WHERE id = $2', [updatedLikes, videoId]);
+        } else {
+            await db.query('INSERT INTO video_likes (video_id, user_id) VALUES ($1, $2)', [videoId, userId]);
+
+            const likeCountQuery = 'SELECT likes FROM videos WHERE id = $1';
+            const likeCountResult = await db.query(likeCountQuery, [videoId]);
+            updatedLikes = likeCountResult.rows[0].likes + 1;
+
+            await db.query('UPDATE videos SET likes = $1 WHERE id = $2', [updatedLikes, videoId]);
+        }
+
+        res.json({ likes: updatedLikes, liked: likeCheckResult.rowCount === 0 });
+    } catch (error) {
+        console.log('Error handling like:', error.message);
+        res.status(500).json({ error: error.message });
     }
-
-    let updatedLikes;
-    if (existingLikes.length > 0) {
-      // Si ya le dio like, eliminar el like
-      await supabase
-        .from('video_likes')
-        .delete()
-        .eq('video_id', videoId)
-        .eq('user_id', userId);
-
-      // Obtener el número actual de likes
-      const { data: videoData, error: fetchError } = await supabase
-        .from('videos')
-        .select('likes')
-        .eq('id', videoId)
-        .single();
-        
-      if (fetchError) throw fetchError;
-
-      updatedLikes = videoData.likes > 0 ? videoData.likes - 1 : 0;
-
-      // Actualizar los likes en la base de datos
-      const { data: updatedVideo, error: updateError } = await supabase
-        .from('videos')
-        .update({ likes: updatedLikes })
-        .eq('id', videoId)
-        .single();
-
-      if (updateError) throw updateError;
-    } else {
-      // Si no le ha dado like, agregar el like
-      await supabase
-        .from('video_likes')
-        .insert([{ video_id: videoId, user_id: userId }]);
-
-      // Obtener el número actual de likes
-      const { data: videoData, error: fetchError } = await supabase
-        .from('videos')
-        .select('likes')
-        .eq('id', videoId)
-        .single();
-        
-      if (fetchError) throw fetchError;
-
-      updatedLikes = videoData.likes + 1;
-
-      // Actualizar los likes en la base de datos
-      const { data: updatedVideo, error: updateError } = await supabase
-        .from('videos')
-        .update({ likes: updatedLikes })
-        .eq('id', videoId)
-        .single();
-
-      if (updateError) throw updateError;
-    }
-
-    res.json({ likes: updatedLikes, liked: existingLikes.length === 0 });
-  } catch (error) {
-    console.log('Error handling like:', error.message);
-    res.status(500).json({ error: error.message });
-  }
 };
-
-
-
-
-
-
