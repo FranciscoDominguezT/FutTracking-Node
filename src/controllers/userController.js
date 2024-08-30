@@ -28,6 +28,19 @@ exports.updateUserData = async (req, res) => {
     const userId = 11;
     const { edad, altura, nacion_id, provincia_id, email } = req.body;
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'El correo electrónico no es válido.' });
+    }
+
+    if (isNaN(edad) || edad < 10 || edad > 45) {
+        return res.status(400).json({ error: 'La edad debe estar entre 10 y 45 años.' });
+    }
+
+    if (isNaN(altura) || altura < 100 || altura > 220) {
+        return res.status(400).json({ error: 'La altura debe estar entre 100 y 220 cm.' });
+    }
+
     try {
         const updateProfileQuery = `
             UPDATE perfil_jugadores 
