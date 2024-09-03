@@ -24,6 +24,28 @@ exports.getUserData = async (req, res) => {
     }
 };
 
+exports.getUserById = async (req, res) => {
+    const { id } = req.params;
+    try {
+      const query = `
+        SELECT u.id, u.nombre, u.apellido, pj.avatar_url
+        FROM usuarios u
+        LEFT JOIN perfil_jugadores pj ON u.id = pj.usuario_id
+        WHERE u.id = $1
+      `;
+      const result = await db.query(query, [id]);
+  
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+  
+      res.status(200).json(result.rows[0]);
+    } catch (error) {
+      console.error('Error en getUserById:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  };
+
 exports.updateUserData = async (req, res) => {
     const userId = 11;
     const { edad, altura, nacion_id, provincia_id, email } = req.body;
