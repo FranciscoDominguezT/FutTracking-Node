@@ -114,8 +114,11 @@ exports.getComments = async (req, res) => {
 };
 
 exports.createComment = async (req, res) => {
-  const { id } = req.params;
-  const { usuarioid, contenido, parentid } = req.body;
+  const { id } = req.params; // ID del posteo
+  const { usuarioid, contenido, parentid } = req.body; // Datos del comentario
+
+  console.log('Creating comment for postId:', id);
+  console.log('Comment data:', { usuarioid, contenido, parentid });
 
   try {
     const query = `
@@ -130,3 +133,71 @@ exports.createComment = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+
+
+exports.deleteComment = async (req, res) => {
+  try {
+    const commentId = parseInt(req.params.commentId, 10); // Asegúrate de convertir el ID a número entero
+    if (isNaN(commentId)) {
+      return res.status(400).json({ error: 'Invalid comment ID' });
+    }
+
+    const query = `DELETE FROM respuestas_posteos WHERE id = $1 RETURNING *`;
+    const result = await db.query(query, [commentId]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Comment not found' });
+    }
+
+    res.status(200).json({ message: 'Comment deleted successfully' });
+  } catch (error) {
+    console.error('Error al eliminar el comentario:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.toggleLike = async (req, res) => {
+  const { postId } = req.params;
+  const userId = 11;
+
+  console.log('Received postId:', postId);
+  console.log('Using userId:', userId);
+
+  if (!postId) {
+    return res.status(400).json({ error: 'Post ID is required' });
+  }
+
+  try {
+    // Verificar si el like ya existe
+    const checkLikeQuery = 'SELECT * FROM post_likes WHERE post_id = $1 AND user_id = $2';
+    const checkLikeResult = await db.query(checkLikeQuery, [postId, userId]);
+
+    console.log('Check like result:', checkLikeResult.rows);
+
+    if (checkLikeResult.rows.length > 0) {
+      // Eliminar el like si ya existe
+      const deleteQuery = 'DELETE FROM post_likes WHERE post_id = $1 AND user_id = $2';
+      await db.query(deleteQuery, [postId, userId]);
+
+      // Reducir el contador de likes
+      const updateQuery = 'UPDATE posteos SET likes = likes - 1 WHERE id = $1 RETURNING *';
+      const result = await db.query(updateQuery, [postId]);
+      res.status(200).json(result.rows[0]);
+    } else {
+      // Agregar el like si no existe
+      const insertQuery = 'INSERT INTO post_likes (post_id, user_id) VALUES ($1, $2)';
+      await db.query(insertQuery, [postId, userId]);
+
+      // Incrementar el contador de likes
+      const updateQuery = 'UPDATE posteos SET likes = likes + 1 WHERE id = $1 RETURNING *';
+      const result = await db.query(updateQuery, [postId]);
+      res.status(200).json(result.rows[0]);
+    }
+  } catch (error) {
+    console.error('Error en toggleLike:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
