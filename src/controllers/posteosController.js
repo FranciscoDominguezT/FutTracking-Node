@@ -3,15 +3,17 @@ const db = require('../config/db');
 exports.getAllPosts = async (req, res) => {
   try {
     const query = `
-      SELECT p.id AS post_id, p.usuarioid, p.contenido, p.videourl, p.fechapublicacion, p.likes, 
-             u.nombre, u.apellido, pj.avatar_url, COUNT(rp.id) AS count
-      FROM posteos p
-      LEFT JOIN usuarios u ON p.usuarioid = u.id
-      LEFT JOIN perfil_jugadores pj ON u.id = pj.usuario_id
-      LEFT JOIN respuestas_posteos rp ON p.id = rp.posteoid
-      GROUP BY p.id, u.nombre, u.apellido, pj.avatar_url
-      ORDER BY p.fechapublicacion DESC    
-    `;
+  SELECT p.id AS post_id, p.usuarioid, p.contenido, p.videourl, p.fechapublicacion, p.likes, 
+         u.nombre, u.apellido, pj.avatar_url, COUNT(rp.id) AS count,
+         (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id) AS like_count
+  FROM posteos p
+  LEFT JOIN usuarios u ON p.usuarioid = u.id
+  LEFT JOIN perfil_jugadores pj ON u.id = pj.usuario_id
+  LEFT JOIN respuestas_posteos rp ON p.id = rp.posteoid
+  GROUP BY p.id, u.nombre, u.apellido, pj.avatar_url
+  ORDER BY p.fechapublicacion DESC    
+`;
+
     const result = await db.query(query);
 
     console.log(result.rows);
@@ -162,9 +164,6 @@ exports.toggleLike = async (req, res) => {
   const { postId } = req.params;
   const userId = 11;
 
-  console.log('Received postId:', postId);
-  console.log('Using userId:', userId);
-
   if (!postId) {
     return res.status(400).json({ error: 'Post ID is required' });
   }
@@ -173,8 +172,6 @@ exports.toggleLike = async (req, res) => {
     // Verificar si el like ya existe
     const checkLikeQuery = 'SELECT * FROM post_likes WHERE post_id = $1 AND user_id = $2';
     const checkLikeResult = await db.query(checkLikeQuery, [postId, userId]);
-
-    console.log('Check like result:', checkLikeResult.rows);
 
     if (checkLikeResult.rows.length > 0) {
       // Eliminar el like si ya existe
@@ -200,4 +197,5 @@ exports.toggleLike = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
