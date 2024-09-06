@@ -7,6 +7,7 @@ const profileRoutes = require('./src/routes/profileRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const posteosRoutes = require('./src/routes/posteosRoutes');
 const profileVideoRoutes = require('./src/routes/profileVideoRoutes');
+const authRoutes = require('./src/routes/authRoutes');
 require('dotenv').config();
 
 const app = express();
@@ -22,6 +23,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', posteosRoutes);
 app.use('/api/userProfile', profileVideoRoutes);
+app.use('/api/login', authRoutes);
 
 // Middleware para loggear peticiones a /api/user
 app.use('/api/user', (req, res, next) => {
