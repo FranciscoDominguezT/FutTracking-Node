@@ -5,6 +5,7 @@ const JWT_SECRET = 'futTrackingNode'; // Asegúrate de que sea el mismo secreto 
 exports.getProfileInfo = async (req, res) => {
     // Obtener el token del encabezado de la solicitud
     const token = req.headers.authorization?.split(' ')[1]; // Espera "Bearer <token>"
+    console.log('Token recibido:', req.headers.authorization);
 
     if (!token) {
         return res.status(401).json({ error: 'Token no proporcionado' });
@@ -14,6 +15,7 @@ exports.getProfileInfo = async (req, res) => {
         // Verificar y decodificar el token
         const decoded = jwt.verify(token, JWT_SECRET);
         const userId = decoded.id; // El ID del usuario está en el token
+        console.log('Decoded User ID:', userId)
 
         // Ahora puedes usar el userId para obtener la información del perfil
         const profileQuery = `
@@ -27,11 +29,22 @@ exports.getProfileInfo = async (req, res) => {
             WHERE pj.usuario_id = $1
         `;
         const profileResult = await db.query(profileQuery, [userId]);
+        console.log('Profile Query Result:', profileResult.rows);
+        console.log('Decoded Token:', decoded);
+
         const profileData = profileResult.rows[0];
+
+        if (!profileData) {
+          return res.status(404).json({ message: 'Perfil no encontrado' });
+        }      
 
         const followersQuery = 'SELECT COUNT(*) FROM seguidores WHERE usuarioid = $1';
         const followersResult = await db.query(followersQuery, [userId]);
         const followersCount = parseInt(followersResult.rows[0].count, 10);
+
+        console.log('Decoded Token:', decoded);
+        console.log('SQL Profile Data:', profileResult.rows);
+
 
         res.json({
             profile: profileData,

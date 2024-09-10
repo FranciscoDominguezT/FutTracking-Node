@@ -5,6 +5,6 @@ const authenticateToken = require('../middlewares/auth-middleware');
 
 // Ruta para obtener la información del perfil
 router.get('/profile', authenticateToken, profileController.getProfileInfo);
-router.get('/perfil', profileController.getPerfil);
+router.get('/perfil', authenticateToken, profileController.getPerfil);
 
 module.exports = router;
