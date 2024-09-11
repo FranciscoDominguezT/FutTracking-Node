@@ -139,3 +139,25 @@ exports.getProvincias = async (req, res) => {
     }
 };
 
+exports.getCurrentUser = async (req, res) => {
+    try {
+      const userId = req.user.id; // Obtenido del middleware de autenticación
+      const query = `
+        SELECT u.id, u.nombre, u.apellido, pj.avatar_url
+        FROM usuarios u
+        LEFT JOIN perfil_jugadores pj ON u.id = pj.usuario_id
+        WHERE u.id = $1
+      `;
+      const result = await db.query(query, [userId]);
+  
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+  
+      res.status(200).json(result.rows[0]);
+    } catch (error) {
+      console.error('Error en getCurrentUser:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  };
+

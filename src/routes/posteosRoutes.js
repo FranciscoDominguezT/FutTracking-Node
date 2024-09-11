@@ -4,7 +4,7 @@ const posteosController = require('../controllers/posteosController');
 const authenticateToken = require('../middlewares/auth-middleware');
 
 router.get('/', authenticateToken, posteosController.getAllPosts);
-router.post('/', posteosController.createPost);
+router.post('/', authenticateToken, posteosController.createPost);
 router.put('/:id', posteosController.updatePost);
 router.delete('/:id', posteosController.deletePost);
 router.get('/:id/comments', posteosController.getComments);

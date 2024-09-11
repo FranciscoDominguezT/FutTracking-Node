@@ -27,7 +27,8 @@ exports.getAllPosts = async (req, res) => {
 };
 
 exports.createPost = async (req, res) => {
-  const { usuarioid, contenido, videourl } = req.body;
+  const { contenido, videourl } = req.body;
+  const usuarioid = req.user.id; // Usamos el ID del usuario autenticado
 
   try {
     const query = 'INSERT INTO posteos (usuarioid, contenido, videourl) VALUES ($1, $2, $3) RETURNING *';

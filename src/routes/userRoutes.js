@@ -10,5 +10,6 @@ router.get('/test', userController.test);
 router.put('/userdata', authenticateToken, userController.updateUserData);
 router.get('/naciones', userController.getNaciones);
 router.get('/provincias/:nacionId', userController.getProvincias);
+router.get('/', authenticateToken, userController.getCurrentUser);
 
 module.exports = router;
