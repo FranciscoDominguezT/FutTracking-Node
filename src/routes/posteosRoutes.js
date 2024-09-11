@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const posteosController = require('../controllers/posteosController');
+const authenticateToken = require('../middlewares/auth-middleware');
 
-router.get('/', posteosController.getAllPosts);
+router.get('/', authenticateToken, posteosController.getAllPosts);
 router.post('/', posteosController.createPost);
 router.put('/:id', posteosController.updatePost);
 router.delete('/:id', posteosController.deletePost);

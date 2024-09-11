@@ -3,61 +3,56 @@ const db = require('../config/db');
 const JWT_SECRET = 'futTrackingNode'; // Asegúrate de que sea el mismo secreto que usas en auth
 
 exports.getProfileInfo = async (req, res) => {
-    // Obtener el token del encabezado de la solicitud
-    const token = req.headers.authorization?.split(' ')[1]; // Espera "Bearer <token>"
-    console.log('Token recibido:', req.headers.authorization);
+  const token = req.headers.authorization?.split(' ')[1];
+  console.log('Token recibido:', req.headers.authorization);
 
-    if (!token) {
-        return res.status(401).json({ error: 'Token no proporcionado' });
+  if (!token) {
+    return res.status(401).json({ error: 'Token no proporcionado' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userId = decoded.id;
+    console.log('Decoded User ID:', userId);
+
+    const profileQuery = `
+    SELECT 
+      pj.id, pj.avatar_url, pj.edad, pj.altura, pj.peso,
+      u.id AS usuario_id, u.nombre, u.apellido, u.rol,
+      n.nombre AS nacion_nombre, p.nombre AS provincia_nombre
+    FROM usuarios u
+    LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
+    LEFT JOIN naciones n ON pj.nacion_id = n.id
+    LEFT JOIN provincias p ON pj.provincia_id = p.id
+    WHERE u.id = $1
+    `;
+
+    const profileResult = await db.query(profileQuery, [userId]);
+    console.log('Consulta ejecutada con userId:', userId);
+    console.log('Resultados de la consulta:', profileResult.rows);
+
+    if (profileResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Perfil no encontrado' });
     }
 
-    try {
-        // Verificar y decodificar el token
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const userId = decoded.id; // El ID del usuario está en el token
-        console.log('Decoded User ID:', userId)
+    const profileData = profileResult.rows[0];
 
-        // Ahora puedes usar el userId para obtener la información del perfil
-        const profileQuery = `
-            SELECT pj.id, pj.avatar_url, pj.edad, pj.altura, pj.peso,
-                   u.id AS usuario_id, u.nombre, u.apellido, u.rol,
-                   n.nombre AS nacion_nombre, p.nombre AS provincia_nombre
-            FROM perfil_jugadores pj
-            JOIN usuarios u ON pj.usuario_id = u.id
-            JOIN naciones n ON pj.nacion_id = n.id
-            JOIN provincias p ON pj.provincia_id = p.id
-            WHERE pj.usuario_id = $1
-        `;
-        const profileResult = await db.query(profileQuery, [userId]);
-        console.log('Profile Query Result:', profileResult.rows);
-        console.log('Decoded Token:', decoded);
+    const followersQuery = 'SELECT COUNT(*) FROM seguidores WHERE usuarioid = $1';
+    const followersResult = await db.query(followersQuery, [userId]);
+    const followersCount = parseInt(followersResult.rows[0].count, 10);
 
-        const profileData = profileResult.rows[0];
-
-        if (!profileData) {
-          return res.status(404).json({ message: 'Perfil no encontrado' });
-        }      
-
-        const followersQuery = 'SELECT COUNT(*) FROM seguidores WHERE usuarioid = $1';
-        const followersResult = await db.query(followersQuery, [userId]);
-        const followersCount = parseInt(followersResult.rows[0].count, 10);
-
-        console.log('Decoded Token:', decoded);
-        console.log('SQL Profile Data:', profileResult.rows);
-
-
-        res.json({
-            profile: profileData,
-            followersCount: followersCount
-        });
-    } catch (error) {
-        console.error('Error en getProfileInfo:', error.message);
-        res.status(500).json({ error: 'Error interno del servidor' });
-    }
+    res.json({
+      profile: profileData,
+      followersCount: followersCount
+    });
+  } catch (error) {
+    console.error('Error en getProfileInfo:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 };
 
 exports.getPerfil = async (req, res) => {
-    const userId = 11; 
+  const userId = 11;
 
   try {
     const result = await db.query(`
