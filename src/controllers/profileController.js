@@ -3,33 +3,25 @@ const db = require('../config/db');
 const JWT_SECRET = 'futTrackingNode'; // Asegúrate de que sea el mismo secreto que usas en auth
 
 exports.getProfileInfo = async (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  console.log('Token recibido:', req.headers.authorization);
-
-  if (!token) {
-    return res.status(401).json({ error: 'Token no proporcionado' });
-  }
-
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.id;
-    console.log('Decoded User ID:', userId);
+    const userId = req.user.id;
 
     const profileQuery = `
     SELECT 
-      pj.id, pj.avatar_url, pj.edad, pj.altura, pj.peso,
-      u.id AS usuario_id, u.nombre, u.apellido, u.rol,
+      u.id AS usuario_id, u.nombre, u.apellido, u.rol, u.avatar_url,
+      COALESCE(pj.edad, pa.edad) AS edad,
+      COALESCE(pj.altura, pa.altura) AS altura,
+      COALESCE(pj.peso, pa.peso) AS peso,
       n.nombre AS nacion_nombre, p.nombre AS provincia_nombre
     FROM usuarios u
     LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
-    LEFT JOIN naciones n ON pj.nacion_id = n.id
-    LEFT JOIN provincias p ON pj.provincia_id = p.id
+    LEFT JOIN perfil_aficionados pa ON pa.usuario_id = u.id
+    LEFT JOIN naciones n ON COALESCE(pj.nacion_id, pa.nacion_id) = n.id
+    LEFT JOIN provincias p ON COALESCE(pj.provincia_id, pa.provincia_id) = p.id
     WHERE u.id = $1
     `;
 
     const profileResult = await db.query(profileQuery, [userId]);
-    console.log('Consulta ejecutada con userId:', userId);
-    console.log('Resultados de la consulta:', profileResult.rows);
 
     if (profileResult.rows.length === 0) {
       return res.status(404).json({ message: 'Perfil no encontrado' });
