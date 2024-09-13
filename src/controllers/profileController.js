@@ -84,3 +84,33 @@ exports.getPerfil = async (req, res) => {
   }
 }
 
+exports.getPlayerProfile = async (req, res) => {
+  const { id } = req.params; // This is now the usuario_id
+  console.log(`Received usuario_id in backend: ${id}`);
+
+  try {
+    const result = await db.query(`
+      SELECT 
+        u.id AS usuario_id, u.nombre, u.apellido, u.rol,
+        pj.id AS perfil_id, pj.avatar_url, pj.edad, pj.altura, pj.peso,
+        n.nombre AS nacion_nombre, p.nombre AS provincia_nombre
+      FROM usuarios u
+      LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
+      LEFT JOIN naciones n ON pj.nacion_id = n.id
+      LEFT JOIN provincias p ON pj.provincia_id = p.id
+      WHERE u.id = $1
+    `, [id]);
+
+    console.log(`Database query result:`, result.rows);
+
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]);
+    } else {
+      res.status(404).json({ message: "Perfil no encontrado" });
+    }
+  } catch (error) {
+    console.error("Error fetching player profile:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
