@@ -2,14 +2,14 @@ const db = require('../config/db');
 
 exports.getUserVideos = async (req, res) => {
   try {
-    const { id: usuarioid } = req.user;
+    const { usuarioId } = req.params;
 
-    if (!usuarioid) {
-      return res.status(400).json({ message: "Usuario no autenticado." });
+    if (!usuarioId) {
+      return res.status(400).json({ message: "ID de usuario no proporcionado." });
     }
 
     const videoQuery = 'SELECT * FROM videos WHERE usuarioid = $1';
-    const result = await db.query(videoQuery, [usuarioid]);
+    const result = await db.query(videoQuery, [usuarioId]);
 
     if (result.rows.length === 0) {
       return res.status(200).json({ message: "No hay videos cargados" });

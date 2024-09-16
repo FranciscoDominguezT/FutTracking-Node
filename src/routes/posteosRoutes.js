@@ -10,6 +10,7 @@ router.delete('/:id', posteosController.deletePost);
 router.get('/:id/comments', posteosController.getComments);
 router.post('/:id/comments', posteosController.createComment);
 router.delete('/:id/comments/:commentId', posteosController.deleteComment);
+router.get('/user/:userId', posteosController.getPostsByUser);
 router.put('/:postId/like', (req, res, next) => {
     console.log('Request params:', req.params);
     next();

@@ -3,25 +3,54 @@ const db = require('../config/db');
 const JWT_SECRET = 'futTrackingNode'; // Asegúrate de que sea el mismo secreto que usas en auth
 
 exports.getProfileInfo = async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token no proporcionado' });
+  }
+
   try {
-    const userId = req.user.id;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userId = decoded.id;
 
-    const profileQuery = `
-    SELECT 
-      u.id AS usuario_id, u.nombre, u.apellido, u.rol, u.avatar_url,
-      COALESCE(pj.edad, pa.edad) AS edad,
-      COALESCE(pj.altura, pa.altura) AS altura,
-      COALESCE(pj.peso, pa.peso) AS peso,
-      n.nombre AS nacion_nombre, p.nombre AS provincia_nombre
-    FROM usuarios u
-    LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
-    LEFT JOIN perfil_aficionados pa ON pa.usuario_id = u.id
-    LEFT JOIN naciones n ON COALESCE(pj.nacion_id, pa.nacion_id) = n.id
-    LEFT JOIN provincias p ON COALESCE(pj.provincia_id, pa.provincia_id) = p.id
-    WHERE u.id = $1
-    `;
+    // First, get the user's role
+    const userQuery = 'SELECT rol FROM usuarios WHERE id = $1';
+    const userResult = await db.query(userQuery, [userId]);
 
-    const profileResult = await db.query(profileQuery, [userId]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    const userRole = userResult.rows[0].rol;
+
+    let profileQuery, profileResult;
+
+    if (userRole === 'Jugador') {
+      profileQuery = `
+        SELECT 
+          pj.id, pj.avatar_url, pj.edad, pj.altura, pj.peso,
+          u.id AS usuario_id, u.nombre, u.apellido, u.rol,
+          n.nombre AS nacion_nombre, p.nombre AS provincia_nombre
+        FROM usuarios u
+        LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
+        LEFT JOIN naciones n ON pj.nacion_id = n.id
+        LEFT JOIN provincias p ON pj.provincia_id = p.id
+        WHERE u.id = $1
+      `;
+    } else if (userRole === 'Aficionado') {
+      profileQuery = `
+        SELECT 
+          pa.id, pa.avatar_url,
+          u.id AS usuario_id, u.nombre, u.apellido, u.rol
+        FROM usuarios u
+        LEFT JOIN perfil_aficionados pa ON pa.usuario_id = u.id
+        WHERE u.id = $1
+      `;
+    } else {
+      return res.status(400).json({ message: 'Rol de usuario no válido' });
+    }
+
+    profileResult = await db.query(profileQuery, [userId]);
 
     if (profileResult.rows.length === 0) {
       return res.status(404).json({ message: 'Perfil no encontrado' });
@@ -77,8 +106,12 @@ exports.getPerfil = async (req, res) => {
 }
 
 exports.getPlayerProfile = async (req, res) => {
-  const { id } = req.params; // This is now the usuario_id
+  const { id } = req.params;
   console.log(`Received usuario_id in backend: ${id}`);
+
+  if (!id) {
+    return res.status(400).json({ message: "ID de usuario no proporcionado" });
+  }
 
   try {
     const result = await db.query(`
@@ -105,4 +138,6 @@ exports.getPlayerProfile = async (req, res) => {
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+
+
 

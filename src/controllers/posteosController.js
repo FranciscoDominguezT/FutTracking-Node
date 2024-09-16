@@ -201,4 +201,30 @@ exports.toggleLike = async (req, res) => {
   }
 };
 
+exports.getPostsByUser = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const query = `
+      SELECT p.id AS post_id, p.usuarioid, p.contenido, p.videourl, p.fechapublicacion, p.likes, 
+             u.nombre, u.apellido, pj.avatar_url, COUNT(rp.id) AS count,
+             (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id) AS like_count
+      FROM posteos p
+      LEFT JOIN usuarios u ON p.usuarioid = u.id
+      LEFT JOIN perfil_jugadores pj ON u.id = pj.usuario_id
+      LEFT JOIN respuestas_posteos rp ON p.id = rp.posteoid
+      WHERE p.usuarioid = $1 
+      GROUP BY p.id, u.nombre, u.apellido, pj.avatar_url
+      ORDER BY p.fechapublicacion DESC    
+    `;
+
+    const result = await db.query(query, [userId]);
+
+    console.log(result.rows);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error en getPostsByUser:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 

@@ -6,10 +6,9 @@ const authenticateToken = (req, res, next) => {
 
   if (!token) return res.status(401).json({ message: 'Acceso denegado. No hay token' });
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ message: 'Token no válido' });
     req.user = user; // Guardar la información del usuario en la request
-    console.log('req.user', req.user);
     next();
   });
 };

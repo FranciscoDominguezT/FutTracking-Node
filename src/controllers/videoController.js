@@ -123,7 +123,7 @@ exports.getVideoLikes = async (req, res) => {
     try {
         const likesQuery = 'SELECT likes FROM videos WHERE id = $1';
         const result = await db.query(likesQuery, [videoId]);
-        // console.log("los likes son de ",result )
+        console.log("los likes son de ",result )
         res.json({ likes: result.rows[0].likes });
     } catch (error) {
         res.status(500).json({ error: error.message });

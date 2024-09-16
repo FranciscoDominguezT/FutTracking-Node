@@ -16,17 +16,32 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Rutas de API
 app.use('/api/videos', videoRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/posts', posteosRoutes);
 app.use('/api/userProfile', profileVideoRoutes);
 app.use('/api/login', authRoutes);
 app.use('/api/filter', filterRoutes);
 
+// Middleware para loggear peticiones a /api/user
+app.use('/api/user', (req, res, next) => {
+    console.log('Recibida petición a /api/user:', req.method, req.url);
+    next();
+});
+
+// Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'build')));
 
+// Manejador de rutas no encontradas para API
+app.use('/api', (req, res) => {
+    res.status(404).json({ error: 'API route not found' });
+});
+
+// Todas las demás rutas sirven index.html
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
