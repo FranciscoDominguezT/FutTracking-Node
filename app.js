@@ -25,6 +25,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/posts', posteosRoutes);
 app.use('/api/userProfile', profileVideoRoutes);
 app.use('/api/login', authRoutes);
+app.use('/api/register', authRoutes);
 app.use('/api/filter', filterRoutes);
 
 // Middleware para loggear peticiones a /api/user
