@@ -13,10 +13,12 @@ exports.getUserData = async (req, res) => {
         // Consulta SQL para obtener datos del perfil y usuario
         const userQuery = `
             SELECT pj.id, pj.edad, pj.altura, pj.nacion_id, pj.provincia_id,
-                   u.id AS usuario_id, u.email
-            FROM perfil_jugadores pj
-            JOIN usuarios u ON pj.usuario_id = u.id
-            WHERE pj.usuario_id = $1
+                   u.id AS usuario_id, u.email,
+                   pa.avatar_url
+            FROM usuarios u
+            LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
+            LEFT JOIN perfil_aficionados pa ON pa.usuario_id = u.id
+            WHERE u.id = $1
         `;
         const result = await db.query(userQuery, [userId]);
 
@@ -160,4 +162,5 @@ exports.getCurrentUser = async (req, res) => {
       res.status(500).json({ error: error.message });
     }
   };
+
 
