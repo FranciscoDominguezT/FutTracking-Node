@@ -163,4 +163,27 @@ exports.getCurrentUser = async (req, res) => {
     }
   };
 
+  exports.getUserAvatar = async (req, res) => {
+    const userId = req.user.id;  // ID del usuario logueado
 
+    try {
+        // Consulta para obtener el avatar del perfil, ya sea de un jugador o un aficionado
+        const query = `
+            SELECT COALESCE(pj.avatar_url, pa.avatar_url) AS avatar_url
+            FROM usuarios u
+            LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
+            LEFT JOIN perfil_aficionados pa ON pa.usuario_id = u.id
+            WHERE u.id = $1
+        `;
+        const result = await db.query(query, [userId]);
+
+        if (result.rows.length === 0 || !result.rows[0].avatar_url) {
+            return res.status(404).json({ error: 'Avatar no encontrado' });
+        }
+
+        res.json({ avatar_url: result.rows[0].avatar_url });
+    } catch (error) {
+        console.error('Error al obtener el avatar del usuario:', error.message);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};

@@ -9,10 +9,7 @@ router.get('/:videoId/likes', videoController.getVideoLikes); // Asegúrate de q
 router.post('/:videoId/like', videoController.likeVideo);
 router.get('/:id_seguidor/:usuarioid/follow', videoController.checkFollowStatus);
 router.post('/:id_seguidor/:usuarioid/followChange', videoController.handleFollowToggle);
-
-
-
-
+router.get('/player/:id', videoController.getVideoUploaderProfile);
 
 
 module.exports = router;

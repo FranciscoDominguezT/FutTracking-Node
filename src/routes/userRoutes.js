@@ -11,6 +11,7 @@ router.put('/userdata', authenticateToken, userController.updateUserData);
 router.get('/naciones', userController.getNaciones);
 router.get('/provincias/:nacionId', userController.getProvincias);
 router.get('/', authenticateToken, userController.getCurrentUser);
+router.get('/avatar', authenticateToken, userController.getUserAvatar);
 
 
 module.exports = router;

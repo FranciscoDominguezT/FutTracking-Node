@@ -171,3 +171,43 @@ exports.likeVideo = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+exports.getVideoUploaderProfile = async (req, res) => {
+    const { id } = req.params;
+  console.log(`Received usuario_id in backend: ${id}`);
+
+  if (!id) {
+    return res.status(400).json({ message: "ID de usuario no proporcionado" });
+  }
+
+  try {
+    const result = await db.query(`
+      SELECT 
+        u.id AS usuario_id, u.nombre, u.apellido, u.rol,
+        pj.id AS perfil_id, pj.avatar_url, pj.edad, pj.altura, pj.peso,
+        l.nombre AS localidad_nombre,
+        p.nombre AS provincia_nombre,
+        n.nombre AS nacion_nombre
+      FROM usuarios u
+      LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
+      LEFT JOIN localidades l ON pj.localidad_id = l.id
+      LEFT JOIN provincias p ON pj.provincia_id = p.id
+      LEFT JOIN naciones n ON pj.nacion_id = n.id
+      WHERE u.id = $1
+    `, [id]);
+
+    console.log("Database query result:", result.rows);
+
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]);
+    } else {
+      res.status(404).json({ message: "Perfil no encontrado" });
+    }
+  } catch (error) {
+    console.error("Error fetching player profile:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+    }
+  };
+  
+  
+  

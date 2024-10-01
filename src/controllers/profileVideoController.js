@@ -39,3 +39,21 @@ exports.getVideoById = async (req, res) => {
       res.status(500).json({ error: error.message });
     }
   };
+
+  exports.getLoggedInUserVideos = async (req, res) => {
+    try {
+      const userId = req.user.id;  // Suponiendo que tienes el middleware que decodifica el token JWT
+  
+      const videoQuery = 'SELECT * FROM videos WHERE usuarioid = $1';
+      const result = await db.query(videoQuery, [userId]);
+  
+      if (result.rows.length === 0) {
+        return res.status(200).json({ message: "No hay videos cargados" });
+      }
+  
+      res.status(200).json(result.rows);
+    } catch (error) {
+      console.log('Error fetching videos:', error.message);
+      res.status(500).json({ message: "Error al obtener los videos." });
+    }
+  };
