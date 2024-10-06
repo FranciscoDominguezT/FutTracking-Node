@@ -10,6 +10,7 @@ const profileVideoRoutes = require('./src/routes/profileVideoRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const filterRoutes = require('./src/routes/filterRoutes');
 const searchRoutes = require('./src/routes/searchRoutes');
+const authenticateToken = require('./src/middlewares/auth-middleware');
 require('dotenv').config();
 
 const app = express();

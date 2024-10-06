@@ -120,7 +120,8 @@ exports.getComments = async (req, res) => {
 
 exports.createComment = async (req, res) => {
   const { id } = req.params; // ID del posteo
-  const { usuarioid, contenido, parentid } = req.body; // Datos del comentario
+  const { contenido, parentid } = req.body; // Datos del comentario
+  const usuarioid = req.user.id; // ID del usuario autenticado
 
   console.log('Creating comment for postId:', id);
   console.log('Comment data:', { usuarioid, contenido, parentid });
@@ -132,13 +133,26 @@ exports.createComment = async (req, res) => {
     `;
     const result = await db.query(query, [id, usuarioid, contenido, parentid]);
 
-    res.status(201).json(result.rows[0]);
+    // Obtener información adicional del usuario
+    const userQuery = `
+      SELECT u.nombre, u.apellido, pj.avatar_url
+      FROM usuarios u
+      LEFT JOIN perfil_jugadores pj ON u.id = pj.usuario_id
+      WHERE u.id = $1
+    `;
+    const userResult = await db.query(userQuery, [usuarioid]);
+
+    const commentWithUserData = {
+      ...result.rows[0],
+      ...userResult.rows[0]
+    };
+
+    res.status(201).json(commentWithUserData);
   } catch (error) {
     console.error('Error en createComment:', error.message);
     res.status(500).json({ error: error.message });
   }
 };
-
 
 
 
@@ -165,7 +179,7 @@ exports.deleteComment = async (req, res) => {
 
 exports.toggleLike = async (req, res) => {
   const { postId } = req.params;
-  const userId = 11;
+  const userId = req.user.id;
 
   if (!postId) {
     return res.status(400).json({ error: 'Post ID is required' });

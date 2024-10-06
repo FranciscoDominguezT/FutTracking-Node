@@ -6,6 +6,7 @@ exports.getProfileInfo = async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
+    console.log('No se proporcionó token');
     return res.status(401).json({ error: 'Token no proporcionado' });
   }
 
@@ -16,6 +17,9 @@ exports.getProfileInfo = async (req, res) => {
     // First, get the user's role
     const userQuery = 'SELECT rol FROM usuarios WHERE id = $1';
     const userResult = await db.query(userQuery, [userId]);
+
+    console.log('Token decodificado:', decoded);
+    console.log('ID de usuario:', userId);
 
     if (userResult.rows.length === 0) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
@@ -61,6 +65,8 @@ exports.getProfileInfo = async (req, res) => {
     const followersQuery = 'SELECT COUNT(*) FROM seguidores WHERE usuarioid = $1';
     const followersResult = await db.query(followersQuery, [userId]);
     const followersCount = parseInt(followersResult.rows[0].count, 10);
+
+    console.log('Datos del perfil antes de enviar:', profileData);
 
     res.json({
       profile: profileData,
