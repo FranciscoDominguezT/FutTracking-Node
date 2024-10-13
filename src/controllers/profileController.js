@@ -32,11 +32,21 @@ exports.getProfileInfo = async (req, res) => {
     if (userRole === 'Jugador') {
       profileQuery = `
         SELECT 
-          pj.id, pj.avatar_url, pj.edad, pj.altura, pj.peso,
-          u.id AS usuario_id, u.nombre, u.apellido, u.rol,
-          n.nombre AS nacion_nombre, p.nombre AS provincia_nombre
+          u.id AS usuario_id,
+          u.nombre,
+          u.apellido,
+          u.rol,
+          pj.usuario_id AS perfil_jugador_id,
+          pj.avatar_url,
+          pj.edad,
+          pj.altura,
+          pj.peso,
+          pj.nacion_id,
+          pj.provincia_id,
+          n.nombre AS nacion_nombre,
+          p.nombre AS provincia_nombre
         FROM usuarios u
-        LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
+        LEFT JOIN perfil_jugadores pj ON u.id = pj.usuario_id
         LEFT JOIN naciones n ON pj.nacion_id = n.id
         LEFT JOIN provincias p ON pj.provincia_id = p.id
         WHERE u.id = $1
@@ -47,7 +57,7 @@ exports.getProfileInfo = async (req, res) => {
           pa.id, pa.avatar_url,
           u.id AS usuario_id, u.nombre, u.apellido, u.rol
         FROM usuarios u
-        LEFT JOIN perfil_aficionados pa ON pa.usuario_id = u.id
+        LEFT JOIN perfil_aficionados pa ON u.id = pa.usuario_id
         WHERE u.id = $1
       `;
     } else {

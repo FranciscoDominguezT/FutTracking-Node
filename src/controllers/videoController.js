@@ -132,7 +132,7 @@ exports.getVideoLikes = async (req, res) => {
 
 exports.likeVideo = async (req, res) => {
     const { videoId } = req.params;
-    const userId = 11;
+    const userId = req.user.id;
 
 
     try {

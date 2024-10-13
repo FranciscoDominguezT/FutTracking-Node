@@ -6,7 +6,7 @@ exports.getComments = async (req, res) => {
     console.log('Recibido videoid:', videoid);
 
     const query = `
-      SELECT c.*, u.nombre, u.apellido, p.avatar_url, c.likes
+      SELECT c.*, u.nombre, u.apellido, p.avatar_url, c.likes, c.usuarioid
       FROM comentarios c
       JOIN usuarios u ON c.usuarioid = u.id
       LEFT JOIN perfil_jugadores p ON u.id = p.usuario_id
@@ -154,7 +154,7 @@ exports.getCommentsWithReplies = async (req, res) => {
 
 exports.createComment = async (req, res) => {
   console.log('createComment llamado');
-  console.log('Headers:', req.headers);
+  // console.log('Headers:', req.headers);
   console.log('Usuario:', req.user);
   console.log('Cuerpo de la solicitud:', req.body);
   console.log('Parámetros:', req.params);

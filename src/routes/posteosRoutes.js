@@ -8,11 +8,9 @@ router.post('/', authenticateToken, posteosController.createPost);
 router.put('/:id', posteosController.updatePost);
 router.delete('/:id', posteosController.deletePost);
 router.get('/:id/comments', posteosController.getComments);
-router.post('/:id/comments', authenticateToken, posteosController.createComment);
-router.delete('/:id/comments/:commentId', posteosController.deleteComment);
-router.get('/user/:userId', posteosController.getPostsByUser);
 router.put('/:postId/like', authenticateToken, posteosController.toggleLike);
-
+router.post('/:id/comments', authenticateToken, posteosController.createComment);
+router.get('/user/:userId', posteosController.getPostsByUser);
 
 
 module.exports = router;

@@ -12,15 +12,21 @@ exports.getUserData = async (req, res) => {
     try {
         // Consulta SQL para obtener datos del perfil y usuario
         const userQuery = `
-            SELECT pj.id, pj.edad, pj.altura, pj.nacion_id, pj.provincia_id,
-                   u.id AS usuario_id, u.email,
-                   pa.avatar_url
-            FROM usuarios u
-            LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
-            LEFT JOIN perfil_aficionados pa ON pa.usuario_id = u.id
-            WHERE u.id = $1
+            SELECT u.id AS usuario_id, 
+                u.email,
+                pj.usuario_id AS perfil_jugador_id,
+                pj.edad, 
+                pj.altura, 
+                pj.nacion_id, 
+                pj.provincia_id,
+                COALESCE(pj.avatar_url, pa.avatar_url) AS avatar_url
+                FROM usuarios u
+                LEFT JOIN perfil_jugadores pj ON u.id = pj.usuario_id
+                LEFT JOIN perfil_aficionados pa ON u.id = pa.usuario_id
+                WHERE u.id = $1
         `;
         const result = await db.query(userQuery, [userId]);
+        // console.log("Me llega el usuario :", result.rows);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -44,11 +50,16 @@ exports.getUserById = async (req, res) => {
 
     try {
         const query = `
-            SELECT u.id, u.nombre, u.apellido, pj.avatar_url
+            SELECT u.id, u.nombre, u.apellido, pj.avatar_url,
+                loc.nombre AS localidad_nombre, prov.nombre AS provincia_nombre, nac.nombre AS nacion_nombre
             FROM usuarios u
             LEFT JOIN perfil_jugadores pj ON u.id = pj.usuario_id
+            LEFT JOIN localidades loc ON pj.localidad_id = loc.id
+            LEFT JOIN provincias prov ON pj.provincia_id = prov.id
+            LEFT JOIN naciones nac ON prov.nacion_id = nac.id
             WHERE u.id = $1
         `;
+
         const result = await db.query(query, [id]);
 
         if (result.rows.length === 0) {
@@ -111,15 +122,16 @@ exports.updateUserData = async (req, res) => {
 // Obtener todas las naciones
 exports.getNaciones = async (req, res) => {
     try {
-        const nationsQuery = 'SELECT * FROM naciones ORDER BY nombre';
+        const nationsQuery = 'SELECT * FROM naciones';
         const result = await db.query(nationsQuery);
-
         res.json(result.rows);
+        console.log(result.rows);
     } catch (error) {
         console.error('Error en getNaciones:', error.message);
         res.status(500).json({ error: error.message });
     }
 };
+
 
 // Obtener provincias por nación
 exports.getProvincias = async (req, res) => {
@@ -164,26 +176,29 @@ exports.getCurrentUser = async (req, res) => {
   };
 
   exports.getUserAvatar = async (req, res) => {
-    const userId = req.user.id;  // ID del usuario logueado
-
-    try {
-        // Consulta para obtener el avatar del perfil, ya sea de un jugador o un aficionado
-        const query = `
-            SELECT COALESCE(pj.avatar_url, pa.avatar_url) AS avatar_url
-            FROM usuarios u
-            LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
-            LEFT JOIN perfil_aficionados pa ON pa.usuario_id = u.id
-            WHERE u.id = $1
-        `;
-        const result = await db.query(query, [userId]);
-
-        if (result.rows.length === 0 || !result.rows[0].avatar_url) {
-            return res.status(404).json({ error: 'Avatar no encontrado' });
-        }
-
-        res.json({ avatar_url: result.rows[0].avatar_url });
-    } catch (error) {
-        console.error('Error al obtener el avatar del usuario:', error.message);
-        res.status(500).json({ error: 'Error interno del servidor' });
+    const userId = req.user.id; // Asegúrate de que esto sea un número
+  
+    if (typeof userId !== 'number' || isNaN(userId)) {
+      return res.status(400).json({ error: "El ID del usuario debe ser un número válido." });
     }
-};
+  
+    try {
+      const query = `
+        SELECT COALESCE(pj.avatar_url, pa.avatar_url) AS avatar_url
+        FROM usuarios u
+        LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
+        LEFT JOIN perfil_aficionados pa ON pa.usuario_id = u.id
+        WHERE u.id = $1
+      `;
+      const result = await db.query(query, [userId]);
+  
+      if (result.rows.length === 0 || !result.rows[0].avatar_url) {
+        return res.status(404).json({ error: 'Avatar no encontrado' });
+      }
+  
+      res.json({ avatar_url: result.rows[0].avatar_url });
+    } catch (error) {
+      console.error('Error al obtener el avatar del usuario:', error.message);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
