@@ -155,5 +155,64 @@ exports.getPlayerProfile = async (req, res) => {
   }
 };
 
+exports.getPlayerFollowers = async (req, res) => {
+  const { id } = req.params;
 
+  try {
+    const followersQuery = 'SELECT COUNT(*) FROM seguidores WHERE usuarioid = $1';
+    const followersResult = await db.query(followersQuery, [id]);
+    const followersCount = parseInt(followersResult.rows[0].count, 10);
+
+    res.json({ followersCount });
+  } catch (error) {
+    console.error("Error fetching followers:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+}
+
+exports.getFollowersList = async (req, res) => {
+  try {
+    const userId = req.user.id; // Asume que tienes autenticación JWT y que el ID del usuario está en req.user
+
+    const followers = await db.query(
+      `SELECT u.id, u.nombre, u.apellido, pj.avatar_url, u.rol 
+       FROM followers seguidores s
+       JOIN usuarios u ON u.id = s.id
+       WHERE f.user_id = $1`, 
+       [userId]
+    );
+
+    res.status(200).json({ followers: followers.rows });
+  } catch (error) {
+    console.error("Error al obtener los seguidores:", error);
+    res.status(500).json({ message: "Error al obtener los seguidores" });
+  }
+};
+
+exports.getPlayerFollowersList = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const followersListQuery = `
+    SELECT s.id_seguidor as id, u.nombre, u.apellido, pj.avatar_url, u.rol
+    FROM
+    seguidores s
+    JOIN usuarios u on s.id_seguidor = u.id
+    LEFT JOIN perfil_jugadores pj on u.id = pj.usuario_id
+    WHERE
+    s.usuarioid = $1;
+    `;
+
+    const followersResult = await db.query(followersListQuery, [id]);
+
+    if (followersResult.rows.length > 0) {
+      res.json(followersResult.rows); // Retorna la lista de seguidores
+    } else {
+      res.json([]); // Retorna una lista vacía si no hay seguidores
+    }
+  } catch (error) {
+    console.error('Error al obtener la lista de seguidores:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
 
