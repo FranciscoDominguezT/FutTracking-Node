@@ -58,8 +58,8 @@ exports.googleLogin = async (req, res) => {
       const userId = newUser.rows[0].id;
 
       const insertProfileQuery = `
-        INSERT INTO perfil_aficionados (usuario_id, avatar_url)
-        VALUES ($1, $2)
+        INSERT INTO perfil_aficionados (usuario_id, avatar_url, nacion_id, provincia_id)
+        VALUES ($1, $2, NULL, NULL)
       `;
       await db.query(insertProfileQuery, [userId, picture]);
 
@@ -68,8 +68,8 @@ exports.googleLogin = async (req, res) => {
       user = result.rows[0];
       // Actualizar el perfil del aficionado
       const updateProfileQuery = `
-        INSERT INTO perfil_aficionados (usuario_id, avatar_url)
-        VALUES ($1, $2)
+        INSERT INTO perfil_aficionados (usuario_id, avatar_url, nacion_id, provincia_id)
+        VALUES ($1, $2, NULL, NULL)
         ON CONFLICT (usuario_id) DO UPDATE SET avatar_url = EXCLUDED.avatar_url
       `;
       await db.query(updateProfileQuery, [user.id, picture]);
@@ -106,10 +106,10 @@ exports.register = async (req, res) => {
 
     const userId = newUser.rows[0].id;
 
-    // Insertar perfil de aficionado
+    // Insertar perfil de aficionado con nacion_id y provincia_id nulos
     const insertProfileQuery = `
-      INSERT INTO perfil_aficionados (usuario_id, avatar_url)
-      VALUES ($1, $2)
+      INSERT INTO perfil_aficionados (usuario_id, avatar_url, nacion_id, provincia_id)
+      VALUES ($1, $2, NULL, NULL)
     `;
     const defaultAvatarUrl = "https://uxwing.com/wp-content/themes/uxwing/download/peoples-avatars/no-profile-picture-icon.png";
     await db.query(insertProfileQuery, [userId, defaultAvatarUrl]);

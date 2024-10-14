@@ -74,7 +74,7 @@ exports.getUserById = async (req, res) => {
 };
 
 // Actualizar los datos del usuario logueado
-exports.updateUserData = async (req, res) => {
+exports.updatePlayerData = async (req, res) => {
     const userId = req.user.id;
     const { edad, altura, nacion_id, provincia_id, email } = req.body;
 
@@ -115,6 +115,36 @@ exports.updateUserData = async (req, res) => {
         res.status(200).json({ message: 'Datos del usuario actualizados correctamente' });
     } catch (error) {
         console.log('Error al actualizar los datos del usuario:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.updateAficionadoData = async (req, res) => {
+    const userId = req.user.id;
+    const { nacion_id, provincia_id, email } = req.body;
+
+    // Validación de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'El correo electrónico no es válido.' });
+    }
+
+    try {
+        // Actualizar perfil de aficionado
+        const updateProfileQuery = `
+            UPDATE perfil_aficionados 
+            SET nacion_id = $1, provincia_id = $2
+            WHERE usuario_id = $3
+        `;
+        await db.query(updateProfileQuery, [nacion_id, provincia_id, userId]);
+
+        // Actualizar usuario (email)
+        const updateUserQuery = 'UPDATE usuarios SET email = $1 WHERE id = $2';
+        await db.query(updateUserQuery, [email, userId]);
+
+        res.status(200).json({ message: 'Datos del aficionado actualizados correctamente' });
+    } catch (error) {
+        console.log('Error al actualizar los datos del aficionado:', error.message);
         res.status(500).json({ error: error.message });
     }
 };
