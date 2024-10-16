@@ -185,11 +185,12 @@ exports.createComment = async (req, res) => {
     // Obtener datos adicionales del usuario
     const userQuery = `
       SELECT c.*, u.nombre, u.apellido, 
-             COALESCE(pj.avatar_url, pa.avatar_url) as avatar_url
+             COALESCE(pj.avatar_url, pa.avatar_url, pr.avatar_url) as avatar_url
       FROM comentarios c
       JOIN usuarios u ON c.usuarioid = u.id
       LEFT JOIN perfil_jugadores pj ON u.id = pj.usuario_id
       LEFT JOIN perfil_aficionados pa ON u.id = pa.usuario_id
+      LEFT JOIN perfil_reclutadores pr ON u.id = pr.usuario_id
       WHERE c.id = $1
     `;
     const commentWithUserData = await db.query(userQuery, [result.rows[0].id]);

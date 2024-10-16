@@ -19,10 +19,11 @@ exports.getUserData = async (req, res) => {
                 pj.altura, 
                 pj.nacion_id, 
                 pj.provincia_id,
-                COALESCE(pj.avatar_url, pa.avatar_url) AS avatar_url
+                COALESCE(pj.avatar_url, pa.avatar_url, pr.avatar_url) AS avatar_url
                 FROM usuarios u
                 LEFT JOIN perfil_jugadores pj ON u.id = pj.usuario_id
                 LEFT JOIN perfil_aficionados pa ON u.id = pa.usuario_id
+                LEFT JOIN perfil_reclutadores pr ON u.id = pr.usuario_id
                 WHERE u.id = $1
         `;
         const result = await db.query(userQuery, [userId]);
@@ -214,10 +215,11 @@ exports.getCurrentUser = async (req, res) => {
   
     try {
       const query = `
-        SELECT COALESCE(pj.avatar_url, pa.avatar_url) AS avatar_url
+        SELECT COALESCE(pj.avatar_url, pa.avatar_url, pr.avatar_url) AS avatar_url
         FROM usuarios u
         LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
         LEFT JOIN perfil_aficionados pa ON pa.usuario_id = u.id
+        LEFT JOIN perfil_reclutadores pr ON pr.usuario_id = u.id
         WHERE u.id = $1
       `;
       const result = await db.query(query, [userId]);

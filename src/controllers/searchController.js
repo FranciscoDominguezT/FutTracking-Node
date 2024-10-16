@@ -6,7 +6,7 @@ exports.searchUsers = async (req, res) => {
         let query = `
             SELECT 
                 u.id, u.nombre, u.apellido, 
-                COALESCE(pj.avatar_url, pa.avatar_url) as avatar_url,
+                COALESCE(pj.avatar_url, pa.avatar_url, pr.avatar_url) as avatar_url,
                 (SELECT COUNT(*) FROM seguidores WHERE usuarioid = u.id) as seguidores,
                 (SELECT COUNT(*) FROM videos WHERE usuarioid = u.id) as videos
             FROM 
@@ -15,6 +15,8 @@ exports.searchUsers = async (req, res) => {
                 perfil_jugadores pj ON u.id = pj.usuario_id
             LEFT JOIN 
                 perfil_aficionados pa ON u.id = pa.usuario_id
+            LEFT JOIN
+                perfil_reclutadores pr ON u.id = pr.usuario_id
         `;
 
         // Si se proporcionó un término de búsqueda, agregar la condición WHERE

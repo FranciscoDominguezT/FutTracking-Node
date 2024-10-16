@@ -60,6 +60,15 @@ exports.getProfileInfo = async (req, res) => {
         LEFT JOIN perfil_aficionados pa ON u.id = pa.usuario_id
         WHERE u.id = $1
       `;
+    } else if (userRole === 'Reclutador') {
+      profileQuery = `
+        SELECT 
+          pr.id, pr.avatar_url,
+          u.id AS usuario_id, u.nombre, u.apellido, u.rol
+        FROM usuarios u
+        LEFT JOIN perfil_reclutadores pr ON u.id = pr.usuario_id
+        WHERE u.id = $1
+      `;
     } else {
       return res.status(400).json({ message: 'Rol de usuario no válido' });
     }
@@ -133,10 +142,12 @@ exports.getPlayerProfile = async (req, res) => {
     const result = await db.query(`
       SELECT 
         u.id AS usuario_id, u.nombre, u.apellido, u.rol,
-        pj.id AS perfil_id, pj.avatar_url, pj.edad, pj.altura, pj.peso,
+        pj.id AS perfil_id, pj.avatar_url, pj.edad, pj.altura, pj.peso, pr.avatar_url, pa.avatar_url,
         n.nombre AS nacion_nombre, p.nombre AS provincia_nombre
       FROM usuarios u
       LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
+      LEFT JOIN perfil_reclutadores pr ON pr.usuario_id = u.id
+      LEFT JOIN perfil_aficionados pa ON pa.usuario_id = u.id
       LEFT JOIN naciones n ON pj.nacion_id = n.id
       LEFT JOIN provincias p ON pj.provincia_id = p.id
       WHERE u.id = $1
