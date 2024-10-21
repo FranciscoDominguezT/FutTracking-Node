@@ -29,6 +29,7 @@ app.use('/api/posts', posteosRoutes);
 app.use('/api/userProfile', profileVideoRoutes);
 app.use('/api/login', authRoutes);
 app.use('/api/register', authRoutes);
+app.use('/api/forgotPassword', authRoutes);
 app.use('/api/filter', filterRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/changeRoles', changeRolesRoutes);

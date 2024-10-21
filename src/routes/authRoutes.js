@@ -6,5 +6,6 @@ const authController = require('../controllers/authController');
 router.post('/login', authController.login);
 router.post('/google-login', authController.googleLogin);
 router.post('/', authController.register);
+router.post('/forgot-password', authController.forgotPassword);
 
 module.exports = router;

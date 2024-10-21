@@ -127,3 +127,33 @@ exports.register = async (req, res) => {
     res.status(500).json({ error: 'Error en el servidor' });
   }
 };
+
+exports.forgotPassword = async (req, res) => {
+  const { email, currentPassword, newPassword } = req.body;
+
+  try {
+    // Verificar si el usuario existe
+    const userQuery = 'SELECT * FROM usuarios WHERE email = $1';
+    const result = await db.query(userQuery, [email]);
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: 'Usuario no encontrado' });
+    }
+
+    const user = result.rows[0];
+
+    // Verificar si la contraseña actual es correcta
+    if (currentPassword !== user.contraseña) {
+      return res.status(401).json({ error: 'Contraseña actual incorrecta' });
+    }
+
+    // Actualizar la contraseña
+    const updatePasswordQuery = 'UPDATE usuarios SET contraseña = $1 WHERE email = $2';
+    await db.query(updatePasswordQuery, [newPassword, email]);
+
+    res.status(200).json({ message: 'Contraseña actualizada exitosamente' });
+  } catch (error) {
+    console.error('Error al actualizar la contraseña:', error.message);
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+};
