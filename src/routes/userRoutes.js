@@ -6,8 +6,7 @@ const authenticateToken = require('../middlewares/auth-middleware');
 // Reordenar las rutas, poniendo las rutas específicas antes de las rutas con parámetros
 router.get('/test', userController.test);
 router.get('/userdata', authenticateToken, userController.getUserData);
-router.put('/userdata', authenticateToken, userController.updatePlayerData);
-router.put('/aficionado/userdata', authenticateToken, userController.updateAficionadoData);
+router.put('/userdata', authenticateToken, userController.updateUserData);
 router.get('/naciones', userController.getNaciones);
 router.get('/provincias/:nacionId', userController.getProvincias);
 router.get('/avatar', authenticateToken, userController.getUserAvatar);

@@ -54,22 +54,43 @@ exports.getProfileInfo = async (req, res) => {
     } else if (userRole === 'Aficionado') {
       profileQuery = `
         SELECT 
-          pa.id, pa.avatar_url,
-          u.id AS usuario_id, u.nombre, u.apellido, u.rol
+          u.id AS usuario_id,
+          u.nombre,
+          u.apellido,
+          u.rol,
+          pa.usuario_id AS perfil_jugador_id,
+          pa.avatar_url,
+          pa.nacion_id,
+          pa.provincia_id,
+          n.nombre AS nacion_nombre,
+          p.nombre AS provincia_nombre
         FROM usuarios u
         LEFT JOIN perfil_aficionados pa ON u.id = pa.usuario_id
+        LEFT JOIN naciones n ON pa.nacion_id = n.id
+        LEFT JOIN provincias p ON pa.provincia_id = p.id
         WHERE u.id = $1
       `;
     } else if (userRole === 'Reclutador') {
       profileQuery = `
         SELECT 
-          pr.id, pr.avatar_url,
-          u.id AS usuario_id, u.nombre, u.apellido, u.rol
-        FROM usuarios u
-        LEFT JOIN perfil_reclutadores pr ON u.id = pr.usuario_id
-        WHERE u.id = $1
+        u.id AS usuario_id, 
+        u.nombre, 
+        u.apellido, 
+        u.rol, 
+        pr.id, 
+        pr.avatar_url, 
+        pr.nacion_id, 
+        pr.provincia_id,
+        n.nombre AS nacion_nombre, 
+        p.nombre AS provincia_nombre
+      FROM usuarios u
+      LEFT JOIN perfil_reclutadores pr ON u.id = pr.usuario_id
+      LEFT JOIN naciones n ON pr.nacion_id = n.id
+      LEFT JOIN provincias p ON pr.provincia_id = p.id
+      WHERE u.id = $1
       `;
-    } else {
+    }
+     else {
       return res.status(400).json({ message: 'Rol de usuario no válido' });
     }
 
@@ -131,38 +152,108 @@ exports.getPerfil = async (req, res) => {
 }
 
 exports.getPlayerProfile = async (req, res) => {
-  const { id } = req.params;
-  console.log(`Received usuario_id in backend: ${id}`);
-
-  if (!id) {
-    return res.status(400).json({ message: "ID de usuario no proporcionado" });
-  }
+  const userId = req.params.id;
 
   try {
-    const result = await db.query(`
-      SELECT 
-        u.id AS usuario_id, u.nombre, u.apellido, u.rol,
-        pj.id AS perfil_id, pj.avatar_url, pj.edad, pj.altura, pj.peso, pr.avatar_url, pa.avatar_url,
-        n.nombre AS nacion_nombre, p.nombre AS provincia_nombre
-      FROM usuarios u
-      LEFT JOIN perfil_jugadores pj ON pj.usuario_id = u.id
-      LEFT JOIN perfil_reclutadores pr ON pr.usuario_id = u.id
-      LEFT JOIN perfil_aficionados pa ON pa.usuario_id = u.id
-      LEFT JOIN naciones n ON pj.nacion_id = n.id
-      LEFT JOIN provincias p ON pj.provincia_id = p.id
-      WHERE u.id = $1
-    `, [id]);
+    // First, get the user's role
+    const userQuery = 'SELECT rol FROM usuarios WHERE id = $1';
+    const userResult = await db.query(userQuery, [userId]);
 
-    console.log(`Database query result:`, result.rows);
+    console.log('ID de usuario:', userId);
 
-    if (result.rows.length > 0) {
-      res.json(result.rows[0]);
-    } else {
-      res.status(404).json({ message: "Perfil no encontrado" });
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
     }
+
+    const userRole = userResult.rows[0].rol;
+
+    let profileQuery, profileResult;
+
+    if (userRole === 'Jugador') {
+      profileQuery = `
+        SELECT 
+          u.id AS usuario_id,
+          u.nombre,
+          u.apellido,
+          u.rol,
+          pj.usuario_id AS perfil_jugador_id,
+          pj.avatar_url,
+          pj.edad,
+          pj.altura,
+          pj.peso,
+          pj.nacion_id,
+          pj.provincia_id,
+          n.nombre AS nacion_nombre,
+          p.nombre AS provincia_nombre
+        FROM usuarios u
+        LEFT JOIN perfil_jugadores pj ON u.id = pj.usuario_id
+        LEFT JOIN naciones n ON pj.nacion_id = n.id
+        LEFT JOIN provincias p ON pj.provincia_id = p.id
+        WHERE u.id = $1
+      `;
+    } else if (userRole === 'Aficionado') {
+      profileQuery = `
+        SELECT 
+          u.id AS usuario_id,
+          u.nombre,
+          u.apellido,
+          u.rol,
+          pa.usuario_id AS perfil_jugador_id,
+          pa.avatar_url,
+          pa.nacion_id,
+          pa.provincia_id,
+          n.nombre AS nacion_nombre,
+          p.nombre AS provincia_nombre
+        FROM usuarios u
+        LEFT JOIN perfil_aficionados pa ON u.id = pa.usuario_id
+        LEFT JOIN naciones n ON pa.nacion_id = n.id
+        LEFT JOIN provincias p ON pa.provincia_id = p.id
+        WHERE u.id = $1
+      `;
+    } else if (userRole === 'Reclutador') {
+      profileQuery = `
+        SELECT 
+          u.id AS usuario_id, 
+          u.nombre, 
+          u.apellido, 
+          u.rol, 
+          pr.id, 
+          pr.avatar_url, 
+          pr.nacion_id, 
+          pr.provincia_id,
+          n.nombre AS nacion_nombre, 
+          p.nombre AS provincia_nombre
+        FROM usuarios u
+        LEFT JOIN perfil_reclutadores pr ON u.id = pr.usuario_id
+        LEFT JOIN naciones n ON pr.nacion_id = n.id
+        LEFT JOIN provincias p ON pr.provincia_id = p.id
+        WHERE u.id = $1
+      `;
+    } else {
+      return res.status(400).json({ message: 'Rol de usuario no válido' });
+    }
+
+    profileResult = await db.query(profileQuery, [userId]);
+
+    if (profileResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Perfil no encontrado' });
+    }
+
+    const profileData = profileResult.rows[0];
+
+    const followersQuery = 'SELECT COUNT(*) FROM seguidores WHERE usuarioid = $1';
+    const followersResult = await db.query(followersQuery, [userId]);
+    const followersCount = parseInt(followersResult.rows[0].count, 10);
+
+    console.log('Datos del perfil antes de enviar:', profileData);
+
+    res.json({
+      profile: profileData,
+      followersCount: followersCount
+    });
   } catch (error) {
-    console.error("Error fetching player profile:", error);
-    res.status(500).json({ message: "Error interno del servidor" });
+    console.error('Error en getProfileInfo:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
 
