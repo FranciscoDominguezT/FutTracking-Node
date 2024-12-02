@@ -48,6 +48,27 @@ exports.checkFollowStatus = async (req, res) => {
     }
 };
 
+exports.getCommentLikes = async (req, res) => {
+    const { videoId } = req.params;
+
+    try {
+        // Consulta para obtener los likes de comentarios para un video específico
+        const commentLikesQuery = `
+            SELECT comentarioid, COUNT(*) as likes 
+            FROM comentarios_likes cl
+            JOIN comentarios c ON cl.comentarioid = c.id
+            WHERE c.videoid = $1 
+            GROUP BY comentarioid
+        `;
+        const result = await db.query(commentLikesQuery, [videoId]);
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Error fetching comment likes:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 exports.handleFollowToggle = async (req, res) => {
     const { id_seguidor, usuarioid } = req.params;
 
