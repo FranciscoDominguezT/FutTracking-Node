@@ -38,6 +38,7 @@ exports.googleLogin = async (req, res) => {
   const { name, email, picture } = req.body;
 
   try {
+    console.log('Datos recibidos de Google:', { name, email, picture });
     // Verificar si el usuario ya existe
     const userQuery = 'SELECT * FROM usuarios WHERE email = $1';
     const result = await db.query(userQuery, [email]);
@@ -79,8 +80,14 @@ exports.googleLogin = async (req, res) => {
 
     res.status(200).json({ token: tokenJWT });
   } catch (error) {
-    console.error('Error en el login con Google:', error.message);
-    res.status(500).json({ error: 'Error en el servidor' });
+    console.error('Error detallado en login con Google:', {
+      message: error.message,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: 'Error en el servidor', 
+      details: error.message 
+    });
   }
 };
 
