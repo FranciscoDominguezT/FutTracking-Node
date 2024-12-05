@@ -12,6 +12,7 @@ const filterRoutes = require('./src/routes/filterRoutes');
 const searchRoutes = require('./src/routes/searchRoutes');
 const authenticateToken = require('./src/middlewares/auth-middleware');
 const changeRolesRoutes = require('./src/routes/changeRolesRoutes');
+const messagesRoutes = require('./src/routes/messagesRoutes');
 require('dotenv').config();
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/forgotPassword', authRoutes);
 app.use('/api/filter', filterRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/changeRoles', changeRolesRoutes);
+app.use('/api/messages', messagesRoutes);
 
 // Middleware para loggear peticiones a /api/user
 app.use('/api/user', (req, res, next) => {
